@@ -17,10 +17,12 @@ def extract_url_lines(text: str) -> list[str]:
     """
     # Define a regular expression pattern to match lines like: "url": "..."
     # It matches lines that start with optional spaces, followed by "url": and any quoted string
-    pattern = re.compile(r'^\s*"url":\s*".*?"', re.MULTILINE)
+    pattern: re.Pattern[str] = re.compile(
+        pattern=r'^\s*"url":\s*".*?"', flags=re.MULTILINE
+    )
 
     # Use findall to get all matching lines
-    return pattern.findall(text)
+    return pattern.findall(string=text)
 
 
 # Read a file from the system.
@@ -69,7 +71,7 @@ def url_to_filename(url: str) -> str:
     """
     path: str = urlparse(url).path
     filename: str = os.path.basename(path)
-    return unquote(filename)
+    return unquote(string=filename)
 
 
 # Check if a file exists
@@ -171,13 +173,6 @@ def walk_directory_and_extract_given_file_extension(
     return matched_files  # Return list of all matched file paths
 
 
-# Check if a file exists
-def check_file_exists(system_path: str) -> bool:
-    return os.path.isfile(
-        path=system_path
-    )  # Return True if a file exists at the given path
-
-
 # Get the filename and extension.
 def get_filename_and_extension(path: str) -> str:
     return os.path.basename(
@@ -196,37 +191,42 @@ def main() -> None:
     # The location to the .har file
     har_file_path = "www.dupont.com.har"
     # Read the content of a file
-    file_content = read_a_file(har_file_path)
+    file_content: str = read_a_file(system_path=har_file_path)
 
     # Extract URL lines from the file content
-    url_lines = extract_url_lines(file_content)
+    url_lines: list[str] = extract_url_lines(text=file_content)
 
     # Remove whitespace from the extracted URL lines
-    url_lines = remove_whitespace_from_slice(url_lines)
+    url_lines = remove_whitespace_from_slice(provided_slice=url_lines)
 
     # Convert all lines to lowercase
-    url_lines = convert_uppercase_to_lowercase(url_lines)
+    url_lines = convert_uppercase_to_lowercase(provided_slice=url_lines)
 
     # Remove duplicates from the extracted URL lines
-    url_lines = remove_duplicates_from_slice("\n".join(url_lines))
+    url_lines = remove_duplicates_from_slice(provided_slice="\n".join(url_lines))
 
     # New file name.
     new_file_name = "extracted_urls.txt"
+
+    # Read the existing file content if it exists
+    existing_content: str = read_a_file(system_path=new_file_name)
 
     # Print the extracted URL lines
     for line in url_lines:
         # Save the line to a file
         if ".pdf" in line or ".docx" in line:
             # Trim the prefix
-            line = line.removeprefix('"url": "')
+            line: str = line.removeprefix('"url": "')
             # Trim the suffix
             line = line.removesuffix('.thumb.319.319.png"')
-            # Extract the filename from the URL
-            filename = url_to_filename(line)
-            # Download the PDF or DOCX file
-            download_pdf(pdf_url=line, local_file_path=filename)
-            # Append the line to the new file
-            append_write_to_file(system_path=new_file_name, content=line + "\n")
+            # Check if the line already exists in the file
+            if not line in existing_content:
+                # Extract the filename from the URL
+                filename: str = url_to_filename(url=line)
+                # Download the PDF or DOCX file
+                download_pdf(pdf_url=line, local_file_path=filename)
+                # Append the line to the new file
+                append_write_to_file(system_path=new_file_name, content=line + "\n")
 
     # Walk through the directory and extract .pdf files
     files: list[str] = walk_directory_and_extract_given_file_extension(
